@@ -71,6 +71,7 @@ python test_dify_agent.py --config custom_config.json
 - 输入 `exit` 或 `quit` 退出程序
 - 输入 `reset` 重置对话（清空 conversation_id）
 - 输入 `config` 显示当前配置信息
+- 输入 `:paste` 进入多行模式，结束时输入 `:end`
 
 ## 配置示例
 
@@ -223,4 +224,3 @@ Token 使用量: 1234
 ## 许可证
 
 本工具为内部测试工具，仅供开发和测试使用。
-

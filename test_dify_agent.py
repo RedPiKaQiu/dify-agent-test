@@ -25,6 +25,8 @@ from dify_helper import (
 
 class DifyAgentTester:
     """Dify Agent 测试器"""
+    MULTILINE_CMD = ":paste"
+    MULTILINE_END = ":end"
     
     def __init__(self, config_path: str = "config.json"):
         """
@@ -207,6 +209,43 @@ class DifyAgentTester:
         formatted_response = format_response(answer, conversation_id, metadata, response_time)
         print("\n" + formatted_response + "\n")
     
+    def _read_user_input(self) -> Optional[str]:
+        """读取用户输入，支持多行模式"""
+        raw_line = input("请输入 user_input (或输入命令): ")
+        stripped_line = raw_line.strip()
+
+        if not stripped_line:
+            return None
+
+        left_trimmed = raw_line.lstrip()
+        normalized = left_trimmed.lower()
+
+        if not normalized.startswith(self.MULTILINE_CMD):
+            return stripped_line
+
+        # 处理 :paste 后立即粘贴内容的情况
+        initial_content = left_trimmed[len(self.MULTILINE_CMD):]
+        if initial_content.startswith(" "):
+            initial_content = initial_content[1:]
+
+        print(f"进入多行模式，单独输入 '{self.MULTILINE_END}' 结束，空行不会自动结束。")
+        lines = []
+        if initial_content:
+            lines.append(initial_content.rstrip("\n"))
+
+        while True:
+            line = input()
+            if line.strip().lower() == self.MULTILINE_END:
+                break
+            lines.append(line)
+
+        combined = "\n".join(lines).strip()
+        if not combined:
+            print("⚠️ 未输入任何内容，多行模式已退出。\n")
+            return None
+
+        return combined
+
     async def run_interactive(self) -> None:
         """运行交互式命令行界面"""
         print("\n" + "=" * 60)
@@ -215,13 +254,13 @@ class DifyAgentTester:
         print("输入 'exit' 或 'quit' 退出")
         print("输入 'reset' 重置对话（清空 conversation_id）")
         print("输入 'config' 显示当前配置")
+        print(f"输入 '{self.MULTILINE_CMD}' 进入多行模式，以 '{self.MULTILINE_END}' 结束输入")
         print("=" * 60 + "\n")
         
         while True:
             try:
-                # 获取用户输入
-                user_input = input("请输入 user_input (或输入命令): ").strip()
-                
+                user_input = self._read_user_input()
+
                 if not user_input:
                     continue
                 
@@ -280,4 +319,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
