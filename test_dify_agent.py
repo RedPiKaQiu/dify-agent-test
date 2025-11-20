@@ -35,6 +35,8 @@ class DifyAgentTester:
     """Dify Agent 测试器"""
     MULTILINE_CMD = ":paste"
     MULTILINE_END = ":end"
+    MULTILINE_CANCEL = ":cancel"
+    MODE_TOGGLE_CMD = ":chmod"
     
     def __init__(self, config_path: str = "config.json"):
         """
@@ -47,6 +49,8 @@ class DifyAgentTester:
         self.config: Dict[str, Any] = {}
         self.conversation_id: Optional[str] = None
         self.timeout = 60  # 60秒超时
+        self.multiline_mode = True
+        self._multiline_hint_shown = False
         self._prompt_session = self._create_prompt_session()
 
     def _create_prompt_session(self):
@@ -59,6 +63,14 @@ class DifyAgentTester:
         except Exception:
             # prompt_toolkit 初始化失败时回退到内置 input
             return None
+
+    def _toggle_input_mode(self) -> None:
+        """切换输入模式"""
+        self.multiline_mode = not self.multiline_mode
+        if self.multiline_mode:
+            self._multiline_hint_shown = False
+        mode_name = "多行模式" if self.multiline_mode else "单行模式"
+        print(f"已切换为{mode_name}。\n")
         
     def load_config(self) -> None:
         """加载配置文件"""
@@ -244,7 +256,13 @@ class DifyAgentTester:
         return await loop.run_in_executor(None, lambda: input(prompt_text))
 
     async def _read_user_input(self) -> Optional[str]:
-        """读取用户输入，支持多行模式"""
+        """根据当前模式读取用户输入"""
+        if self.multiline_mode:
+            return await self._read_multiline_input()
+        return await self._read_single_line_input()
+
+    async def _read_single_line_input(self) -> Optional[str]:
+        """读取单行输入，保留旧的 :paste 行为"""
         raw_line = await self._prompt_line("请输入 user_input (或输入命令): ")
         stripped_line = raw_line.strip()
 
@@ -254,6 +272,9 @@ class DifyAgentTester:
         left_trimmed = raw_line.lstrip()
         normalized = left_trimmed.lower()
 
+        if stripped_line.lower() == self.MODE_TOGGLE_CMD:
+            return self.MODE_TOGGLE_CMD
+
         if not normalized.startswith(self.MULTILINE_CMD):
             return stripped_line
 
@@ -262,16 +283,46 @@ class DifyAgentTester:
         if initial_content.startswith(" "):
             initial_content = initial_content[1:]
 
-        print(f"进入多行模式，单独输入 '{self.MULTILINE_END}' 结束，空行不会自动结束。")
+        return await self._read_multiline_input(initial_content=initial_content.rstrip("\n"), force_notice=True)
+
+    async def _read_multiline_input(
+        self,
+        initial_content: Optional[str] = None,
+        force_notice: bool = False
+    ) -> Optional[str]:
+        """读取多行输入"""
+        if force_notice or not self._multiline_hint_shown:
+            print(
+                "多行模式开启，输入 "
+                f"'{self.MULTILINE_END}' 完成，输入 "
+                f"'{self.MULTILINE_CANCEL}' 取消当前输入，输入 "
+                f"'{self.MODE_TOGGLE_CMD}' 可切换为单行模式。"
+            )
+            self._multiline_hint_shown = True
+
         lines = []
         if initial_content:
-            lines.append(initial_content.rstrip("\n"))
+            lines.append(initial_content)
+
+        first_prompt = not lines
 
         while True:
-            line = await self._prompt_line()
-            if line.strip().lower() == self.MULTILINE_END:
+            prompt_text = "请输入 user_input (多行模式): " if first_prompt else "... "
+            line = await self._prompt_line(prompt_text)
+            stripped = line.strip()
+            normalized = stripped.lower()
+
+            if not lines and normalized in {'exit', 'quit', 'reset', 'config', self.MODE_TOGGLE_CMD}:
+                return stripped
+
+            if normalized == self.MULTILINE_CANCEL:
+                print("⚠️ 当前多行输入已取消，您可以重新输入。")
+                return None
+
+            if normalized == self.MULTILINE_END:
                 break
             lines.append(line)
+            first_prompt = False
 
         combined = "\n".join(lines).strip()
         if not combined:
@@ -288,7 +339,9 @@ class DifyAgentTester:
         print("输入 'exit' 或 'quit' 退出")
         print("输入 'reset' 重置对话（清空 conversation_id）")
         print("输入 'config' 显示当前配置")
-        print(f"输入 '{self.MULTILINE_CMD}' 进入多行模式，以 '{self.MULTILINE_END}' 结束输入")
+        print(f"默认处于多行模式（输入 '{self.MULTILINE_END}' 完成输入，输入 '{self.MULTILINE_CANCEL}' 取消当前输入）")
+        print(f"输入 '{self.MODE_TOGGLE_CMD}' 切换单行/多行模式")
+        print(f"在单行模式下可输入 '{self.MULTILINE_CMD}' 临时进入多行模式")
         print("=" * 60 + "\n")
         
         while True:
@@ -296,6 +349,10 @@ class DifyAgentTester:
                 user_input = await self._read_user_input()
 
                 if not user_input:
+                    continue
+                
+                if user_input.lower() == self.MODE_TOGGLE_CMD:
+                    self._toggle_input_mode()
                     continue
                 
                 # 处理命令

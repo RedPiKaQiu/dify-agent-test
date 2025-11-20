@@ -72,7 +72,8 @@ python test_dify_agent.py --config custom_config.json
 - 输入 `exit` 或 `quit` 退出程序
 - 输入 `reset` 重置对话（清空 conversation_id）
 - 输入 `config` 显示当前配置信息
-- 输入 `:paste` 进入多行模式，结束时输入 `:end`
+- 默认处于多行模式（输入 `:end` 完成输入，输入 `:cancel` 放弃当前多行输入）
+- 输入 `:chmod` 在单行/多行模式之间切换；单行模式下也可用 `:paste` 临时进入多行模式
 - CLI 默认使用 `prompt_toolkit`，确保中文和其他宽字符在退格时光标位置正确；如未安装该依赖则自动回退到标准输入（体验略逊）
 
 ## 配置示例
