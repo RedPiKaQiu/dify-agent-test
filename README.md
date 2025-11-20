@@ -24,12 +24,13 @@ agentTest/
 ## 依赖要求
 
 - Python 3.9+
-- aiohttp（需要安装）
+- aiohttp
+- prompt_toolkit（提供对中文/全角字符友好的输入体验，解决退格显示错位问题）
 
 安装依赖：
 
 ```bash
-pip install aiohttp
+pip install -r requirements.txt
 ```
 
 ## 使用方法
@@ -72,6 +73,7 @@ python test_dify_agent.py --config custom_config.json
 - 输入 `reset` 重置对话（清空 conversation_id）
 - 输入 `config` 显示当前配置信息
 - 输入 `:paste` 进入多行模式，结束时输入 `:end`
+- CLI 默认使用 `prompt_toolkit`，确保中文和其他宽字符在退格时光标位置正确；如未安装该依赖则自动回退到标准输入（体验略逊）
 
 ## 配置示例
 
@@ -183,6 +185,7 @@ Token 使用量: 1234
 2. **超时设置**: 默认超时时间为 60 秒，可在代码中修改 `timeout` 变量
 3. **独立运行**: 脚本完全独立，不依赖后端数据库或其他模块
 4. **配置文件格式**: 必须使用有效的 JSON 格式
+5. **中文输入体验**: 已内置 `prompt_toolkit`，可保障退格键在中文、Emoji 等宽字符场景下显示正常；如禁用该依赖，请注意回退到标准输入时光标可能存在偏差
 
 ## 故障排查
 

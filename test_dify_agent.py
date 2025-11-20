@@ -14,6 +14,14 @@ from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 import aiohttp
 
+# prompt_toolkit 提供对 CJK 字符友好的输入体验
+try:
+    from prompt_toolkit import PromptSession
+    from prompt_toolkit.history import InMemoryHistory
+except ImportError:  # pragma: no cover - 可选依赖
+    PromptSession = None
+    InMemoryHistory = None
+
 from dify_helper import (
     build_category_string,
     build_repetition_string,
@@ -39,6 +47,18 @@ class DifyAgentTester:
         self.config: Dict[str, Any] = {}
         self.conversation_id: Optional[str] = None
         self.timeout = 60  # 60秒超时
+        self._prompt_session = self._create_prompt_session()
+
+    def _create_prompt_session(self):
+        """初始化 prompt_toolkit session（可选）"""
+        if PromptSession is None:
+            return None
+        history = InMemoryHistory() if InMemoryHistory else None
+        try:
+            return PromptSession(history=history)
+        except Exception:
+            # prompt_toolkit 初始化失败时回退到内置 input
+            return None
         
     def load_config(self) -> None:
         """加载配置文件"""
@@ -209,9 +229,23 @@ class DifyAgentTester:
         formatted_response = format_response(answer, conversation_id, metadata, response_time)
         print("\n" + formatted_response + "\n")
     
-    def _read_user_input(self) -> Optional[str]:
+    async def _prompt_line(self, prompt_text: str = "") -> str:
+        """统一处理输入，支持 prompt_toolkit 回退到内置 input"""
+        if self._prompt_session:
+            try:
+                return await self._prompt_session.prompt_async(prompt_text)
+            except (KeyboardInterrupt, EOFError):
+                raise
+            except Exception:
+                # prompt_toolkit 读取失败时自动回退
+                pass
+
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, lambda: input(prompt_text))
+
+    async def _read_user_input(self) -> Optional[str]:
         """读取用户输入，支持多行模式"""
-        raw_line = input("请输入 user_input (或输入命令): ")
+        raw_line = await self._prompt_line("请输入 user_input (或输入命令): ")
         stripped_line = raw_line.strip()
 
         if not stripped_line:
@@ -234,7 +268,7 @@ class DifyAgentTester:
             lines.append(initial_content.rstrip("\n"))
 
         while True:
-            line = input()
+            line = await self._prompt_line()
             if line.strip().lower() == self.MULTILINE_END:
                 break
             lines.append(line)
@@ -259,7 +293,7 @@ class DifyAgentTester:
         
         while True:
             try:
-                user_input = self._read_user_input()
+                user_input = await self._read_user_input()
 
                 if not user_input:
                     continue
