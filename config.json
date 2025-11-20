@@ -1,0 +1,64 @@
+{
+  "api_key": "",
+  "dify_base_url": "https://api.dify.ai/v1",
+  "timezone": "Asia/Shanghai",
+  "user": "test_user_001",
+  "current_state": {
+    "physical_energy": "medium",
+    "stress_level": "low",
+    "sleep_quality": "good",
+    "activity_readiness": "ready",
+    "cycle_phase": "unknown"
+  },
+  "user_memory": {
+    "recent_state": [],
+    "short_term_focus": [],
+    "long_term_interests": [],
+    "values_and_priorities": [],
+    "interests_and_intentions": [],
+    "pending_life_items": []
+  },
+  "behavioral_patterns": {
+    "energy_rhythms": [],
+    "success_factors": [],
+    "procrastination_triggers": [],
+    "energy_management": [],
+    "decision_making": [],
+    "mood_triggers": [],
+    "attention_patterns": [],
+    "physical_influences": [],
+    "risk_factors": []
+  },
+  "insight": {
+    "recent_you": [
+      "最近工作压力较大，经常加班到晚上",
+      "开始关注健康问题，每周坚持运动2-3次",
+      "对时间管理有了新的认识，开始使用番茄工作法"
+    ],
+    "you_focus_on": [
+      "提升工作效率，减少加班时间",
+      "保持工作与生活的平衡",
+      "学习新的技能和知识"
+    ],
+    "you_tend_to": [
+      "在上午精力充沛时处理重要任务",
+      "喜欢在安静的环境中专注工作",
+      "习惯在完成任务后给自己小奖励"
+    ]
+  },
+  "candidate_items": [
+    {
+      "id": 1,
+      "item": "2024-01-15T09:00:00+08:00;完成项目报告;120分钟;0;本周需要提交的重要项目报告，包含数据分析部分"
+    },
+    {
+      "id": 2,
+      "item": "2024-01-15T18:00:00+08:00;健身房锻炼;60分钟;2;每周二和周四的固定锻炼时间，主要是有氧运动和力量训练"
+    },
+    {
+      "id": 3,
+      "item": "无开始时间;阅读技术书籍;45分钟;1;正在学习Python高级编程，每天阅读一章"
+    }
+  ],
+  "context_info": null
+}
