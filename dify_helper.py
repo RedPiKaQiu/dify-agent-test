@@ -26,6 +26,15 @@ REPETITION_LABELS = {
     3: "每月",
 }
 
+# 记忆类型定义（独立于后端枚举）
+MEMORY_TYPES = {
+    1: "成就",
+    2: "状态",
+    3: "情绪",
+    4: "关系",
+    5: "模式",
+}
+
 
 def build_category_string() -> str:
     """
@@ -55,66 +64,67 @@ def build_repetition_string() -> str:
     return "/".join(repetitions)
 
 
+def build_memory_type_string() -> str:
+    """
+    生成记忆类型字符串供AI使用
+
+    Returns:
+        str: 格式化的记忆类型字符串，如 "1：成就/2：状态/..."
+    """
+    memory_types = [
+        f"{value}：{label}"
+        for value, label in sorted(MEMORY_TYPES.items())
+    ]
+    return "/".join(memory_types)
+
+
 def build_nowtime(timezone: Optional[str] = None) -> str:
     """
-    统一构建nowtime参数，返回ISO格式字符串
+    统一构建 nowtime 参数，返回 YYYY-MM-DD HH:MM 字符串
     
     Args:
         timezone: 时区字符串，如 'Asia/Shanghai'，默认为 None（使用系统时区）
         
     Returns:
-        str: ISO格式的时间字符串
+        str: 格式化的时间字符串
     """
+    tz_name = timezone or "Asia/Shanghai"
     try:
-        if timezone:
-            tz = ZoneInfo(timezone)
-            current_time = datetime.now(tz)
-        else:
-            current_time = datetime.now()
-        return current_time.isoformat()
+        tz = ZoneInfo(tz_name)
+        current_time = datetime.now(tz)
     except ZoneInfoNotFoundError:
-        # 如果时区无效，使用系统时区
-        return datetime.now().isoformat()
+        current_time = datetime.now()
+    
+    return current_time.strftime("%Y-%m-%d %H:%M")
 
 
-def get_context_info(timezone: Optional[str] = None) -> Dict[str, Any]:
+def get_context_info(timezone: Optional[str] = None,
+                     overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     获取环境上下文信息（简化版，独立实现）
     
     Args:
         timezone: 时区字符串，如 'Asia/Shanghai'，默认为 None（使用系统时区）
+        overrides: 配置文件中提供的 context 信息，优先级更高
         
     Returns:
-        Dict: 包含 time_of_day, day_of_week, season 的字典
+        Dict: 包含调用 agent 所需上下文字段的字典
     """
+    tz_name = timezone or "Asia/Shanghai"
     try:
-        if timezone:
-            tz = ZoneInfo(timezone)
-            current_time = datetime.now(tz)
-        else:
-            current_time = datetime.now()
+        tz = ZoneInfo(tz_name)
+        current_time = datetime.now(tz)
     except ZoneInfoNotFoundError:
         current_time = datetime.now()
     
-    # 获取时间段
-    hour = current_time.hour
-    if 5 <= hour < 12:
-        time_of_day = "morning"
-    elif 12 <= hour < 17:
-        time_of_day = "afternoon"
-    elif 17 <= hour < 21:
-        time_of_day = "evening"
-    else:
-        time_of_day = "night"
-    
-    # 获取星期几
+    # 获取星期几（英文）
     days = [
         "Monday", "Tuesday", "Wednesday", "Thursday",
         "Friday", "Saturday", "Sunday"
     ]
     day_of_week = days[current_time.weekday()]
     
-    # 获取季节（北半球）
+    # 获取季节（北半球，英文描述）
     month = current_time.month
     if month in [12, 1, 2]:
         season = "winter"
@@ -125,12 +135,20 @@ def get_context_info(timezone: Optional[str] = None) -> Dict[str, Any]:
     else:  # [9, 10, 11]
         season = "autumn"
     
-    return {
-        "time_of_day": time_of_day,
+    context = {
         "day_of_week": day_of_week,
-        "weather": None,  # 暂时不包含天气信息
-        "season": season
+        "weather": "unknown",  # 天气信息暂无数据，使用默认
+        "season": season,
+        "repetition": build_repetition_string(),
+        "category": build_category_string(),
+        "nowtime": build_nowtime(tz_name),
+        "memory_type": build_memory_type_string()
     }
+    
+    if overrides:
+        context.update(overrides)
+    
+    return context
 
 
 def format_response(answer: str, conversation_id: Optional[str] = None, 
@@ -174,4 +192,3 @@ def format_response(answer: str, conversation_id: Optional[str] = None,
     
     lines.append("=" * 60)
     return "\n".join(lines)
-

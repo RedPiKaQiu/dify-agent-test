@@ -23,9 +23,6 @@ except ImportError:  # pragma: no cover - 可选依赖
     InMemoryHistory = None
 
 from dify_helper import (
-    build_category_string,
-    build_repetition_string,
-    build_nowtime,
     get_context_info,
     format_response
 )
@@ -134,16 +131,9 @@ class DifyAgentTester:
         Returns:
             Dict: 完整的请求 payload
         """
-        # 构建 category 和 repetition 字符串
-        category = build_category_string()
-        repetition = build_repetition_string()
-        nowtime = build_nowtime(self.config.get('timezone'))
-        
-        # 获取上下文信息（如果配置中没有，则自动生成）
-        if self.config.get('context_info'):
-            context_info = self.config['context_info']
-        else:
-            context_info = get_context_info(self.config.get('timezone'))
+        # 构建上下文信息（配置优先，缺失字段自动补全）
+        context_overrides = self.config.get('context_info')
+        context_info = get_context_info(self.config.get('timezone'), context_overrides)
         
         # 构建 query 数据
         query_data = {
@@ -156,11 +146,7 @@ class DifyAgentTester:
         
         # 构建 payload
         payload = {
-            "inputs": {
-                "category": category,
-                "repetition": repetition,
-                "nowtime": nowtime
-            },
+            "inputs": {},
             "query": query_data,
             "response_mode": "blocking",
             "user": self.config['user']
