@@ -1,6 +1,6 @@
 {
-  "api_key": "app-GFt04gQDyVE3RumzOsrvuLDn",
-  "agent_name": "intent",
+  "api_key": "",
+  "agent_name": "agent2",
   "dify_base_url": "https://api.dify.ai/v1",
   "timezone": "Asia/Shanghai",
   "user": "test_user_001",

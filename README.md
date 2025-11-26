@@ -46,6 +46,7 @@ pip install -r requirements.txt
 
 可选字段：
 
+- `agent_name`: agent 的命令名称（如设置为 `"nameA"`，即可通过 `:nameA` 在 CLI 中切换）
 - `current_state`: 当前状态对象
 - `user_memory`: 用户记忆对象
 - `behavioral_patterns`: 行为模式对象
@@ -55,15 +56,21 @@ pip install -r requirements.txt
 
 ### 2. 运行脚本
 
+脚本默认会在当前目录中自动扫描 `config.json` 及 `config_*.json` 文件，自动加载所有存在的配置；
+也可以通过命令行参数显式指定需要的配置文件。
+
 ```bash
 # 进入 agentTest 目录
 cd agentTest
 
-# 使用默认配置文件 config.json
+# 使用默认配置文件（自动识别 config.json、config_*.json）
 python test_dify_agent.py
 
-# 或指定自定义配置文件
+# 指定自定义配置文件
 python test_dify_agent.py --config custom_config.json
+
+# 同时加载两个 agent 配置（若提供 agent_name，可通过 :自定义名称 切换）
+python test_dify_agent.py --config agent1_config.json --config2 agent2_config.json
 ```
 
 ### 3. 交互命令
@@ -75,6 +82,7 @@ python test_dify_agent.py --config custom_config.json
 - 默认处于多行模式（输入 `:end` 完成输入，输入 `:cancel` 放弃当前多行输入）
 - 输入 `:chmod` 在单行/多行模式之间切换；单行模式下也可用 `:paste` 临时进入多行模式
 - CLI 默认使用 `prompt_toolkit`，确保中文和其他宽字符在退格时光标位置正确；如未安装该依赖则自动回退到标准输入（体验略逊）
+- 同时加载多个配置时，可输入 `:agentName`（来源于配置中的 `agent_name` 字段，默认 `:agent1/:agent2/...`）切换调用的 agent
 
 ## 配置示例
 
@@ -84,6 +92,7 @@ python test_dify_agent.py --config custom_config.json
   "dify_base_url": "https://api.dify.ai/v1",
   "timezone": "Asia/Shanghai",
   "user": "test_user_001",
+  "agent_name": "dailyAgent",
   "current_state": {
     "physical_energy": "medium",
     "stress_level": "low",
